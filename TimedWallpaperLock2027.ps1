@@ -1,22 +1,46 @@
-# 1. Define your exact GitHub RAW source URLs
-$scriptUrl = "https://githubusercontent.com"
-$imageUrl  = "https://githubusercontent.com"
+# 1. Target Date Setup (5 January 2027)
+$triggerDate = [DateTime]"2027-01-05"
+$currentDate = Get-Date
 
-# 2. Automatically create the directory if it doesn't exist
-$dir = "C:\New folder"
-if (!(Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force | Out-Null }
+# Exact path to your image in C:\New folder
+$ImagePath = "C:\New folder\daniel-leone-v7daTKlZzaw-unsplash.jpg"
 
-# 3. Download both files directly from GitHub into the folder
-Invoke-WebRequest -Uri $scriptUrl -OutFile "$dir\TimedWallpaperLock2027.ps1" -UseBasicParsing
-Invoke-WebRequest -Uri $imageUrl -OutFile "$dir\daniel-leone-v7daTKlZzaw-unsplash.jpg" -UseBasicParsing
+# Registry paths for enforcement
+$SystemPolicies = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+$ActiveDesktop   = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop"
 
-# 4. Create the Windows Task Scheduler task (Runs under the logged-in user group with admin rights)
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File '$dir\TimedWallpaperLock2027.ps1'"
-$trigger = New-ScheduledTaskTrigger -AtLogOn
+# 2. Dynamic Check
+if ($currentDate -ge $triggerDate) {
+    # =========================================================================
+    # ON OR AFTER JAN 5, 2027: Apply Custom Wallpaper and LOCK Settings
+    # =========================================================================
+    if (Test-Path $ImagePath) {
+        if (!(Test-Path $SystemPolicies)) { New-Item -Path $SystemPolicies -Force | Out-Null }
+        Set-ItemProperty -Path $SystemPolicies -Name "Wallpaper" -Value $ImagePath -Type String
+        Set-ItemProperty -Path $SystemPolicies -Name "WallpaperStyle" -Value "10" -Type String
 
-# Using 'BUILTIN\Users' ensures the script interacts with the active screen and current user's registry hive
-$principal = New-ScheduledTaskPrincipal -GroupId "BUILTIN\Users" -RunLevel Highest
+        if (!(Test-Path $ActiveDesktop)) { New-Item -Path $ActiveDesktop -Force | Out-Null }
+        Set-ItemProperty -Path $ActiveDesktop -Name "NoChangingWallPaper" -Value 1 -Type DWord
 
-Register-ScheduledTask -TaskName "2027WallpaperAutomator" -Action $action -Trigger $trigger -Principal $principal -Force
+        RUNDLL32.EXE user32.dll, UpdatePerUserSystemParameters
+    }
+} else {
+    # =========================================================================
+    # BEFORE JAN 5, 2027: Enable Windows Spotlight & Keep Settings Unlocked
+    # =========================================================================
+    if (Test-Path $SystemPolicies) {
+        Remove-ItemProperty -Path $SystemPolicies -Name "Wallpaper" -ErrorAction SilentlyContinue
+        Remove-ItemProperty -Path $SystemPolicies -Name "WallpaperStyle" -ErrorAction SilentlyContinue
+    }
+    if (Test-Path $ActiveDesktop) {
+        Remove-ItemProperty -Path $ActiveDesktop -Name "NoChangingWallPaper" -ErrorAction SilentlyContinue
+    }
 
-Write-Host "Smart Board deployment completed! Files downloaded and automated successfully." -ForegroundColor Green
+    $wallpaperReg = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Wallpapers"
+    if (-not (Test-Path $wallpaperReg)) { New-Item -Path $wallpaperReg -Force | Out-Null }
+    Set-ItemProperty -Path $wallpaperReg -Name "BackgroundType" -Value 3
+    
+    $desktopReg = "HKCU:\Control Panel\Desktop"
+    Set-ItemProperty -Path $desktopReg -Name "Wallpaper" -Value ""
+    Stop-Process -Name explorer -Force
+}
